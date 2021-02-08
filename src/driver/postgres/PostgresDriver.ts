@@ -608,36 +608,26 @@ export class PostgresDriver implements Driver {
      * Replaces parameters in the given sql with special escaping character
      * and an array of parameter names to be passed to a query.
      */
-    escapeQueryWithParameters(sql: string, parameters: ObjectLiteral, nativeParameters: ObjectLiteral): [string, any[]] {
+    escapeQueryWithParameters(sql: string, parameters: any, nativeParameters: any): [string, any[]] {
         const builtParameters: any[] = Object.keys(nativeParameters).map(key => nativeParameters[key]);
         if (!parameters || !Object.keys(parameters).length)
             return [sql, builtParameters];
+        // console.log('1 :', Date.now() - before);
+        Object.keys(parameters).forEach(parameter => {
+            builtParameters.push(parameters[parameter]);
+            sql = sql.replace(':' + parameter, '$'+ builtParameters.length);
+        });
+        // console.log('2 :', Date.now() - before);
+        // console.log(sql, builtParameters);
+        // const regexp = new RegExp(keys, "g");
+        //sql = sql.replace(regexp, (key: string): string => {
 
-        const keys = Object.keys(parameters).map(parameter => "(:(\\.\\.\\.)?" + parameter + "\\b)").join("|");
-        sql = sql.replace(new RegExp(keys, "g"), (key: string): string => {
-            let value: any;
-            let isArray = false;
-            if (key.substr(0, 4) === ":...") {
-                isArray = true;
-                value = parameters[key.substr(4)];
-            } else {
-                value = parameters[key.substr(1)];
-            }
+        // builtParameters.push(parameters[key.substr(1)]);
+        // return "$" + builtParameters.length;
 
-            if (isArray) {
-                return value.map((v: any) => {
-                    builtParameters.push(v);
-                    return "$" + builtParameters.length;
-                }).join(", ");
+        //}); // todo: make replace only in value statements, otherwise problems
 
-            } else if (value instanceof Function) {
-                return value();
-
-            } else {
-                builtParameters.push(value);
-                return "$" + builtParameters.length;
-            }
-        }); // todo: make replace only in value statements, otherwise problems
+        // console.log('3 :', Date.now() - before);
         return [sql, builtParameters];
     }
 
